@@ -98,7 +98,7 @@ struct server_config * config_create(void) {
     return config;
 }
 
-struct server_config * config_clone(struct server_config* src) {
+struct server_config * config_clone(const struct server_config* src) {
     struct server_config *config = NULL;
     if (src == NULL) {
         return config;
@@ -178,6 +178,25 @@ void config_ssrot_revision(struct server_config* config) {
             string_safe_assign(&config->protocol, ssr_protocol_name_of_type(ssr_protocol_origin));
         }
     }
+}
+
+bool config_is_overtls(const struct server_config* config) {
+    bool result = false;
+    struct server_config* cfg = config_clone(config);
+    config_ssrot_revision(cfg);
+
+    if (cfg->over_tls_enable) {
+        enum ssr_protocol proto = ssr_protocol_type_of_name(cfg->protocol);
+        enum ssr_obfs obfs = ssr_obfs_type_of_name(cfg->obfs);
+        enum ss_cipher_type method = ss_cipher_type_of_name(cfg->method);
+        // TODO: maybe the logic will change.
+        if (proto == ssr_protocol_origin && obfs == ssr_obfs_plain && method == ss_cipher_none) {
+            result = true;
+        }
+    }
+
+    config_release(cfg);
+    return result;
 }
 
 static int uid_cmp(const void *left, const void *right) {
